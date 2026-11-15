@@ -323,11 +323,24 @@ function nameFromUrl(url){ const m=String(url||'').match(/character\/([^\/?#]+)/
 function repoListLink(){ const m=location.hostname.match(/^([^.]+)\.github\.io$/i); const repo=location.pathname.split('/')[1];
   return m&&repo?'https://github.com/'+m[1]+'/'+repo+'/blob/HEAD/characters.txt':''; }
 async function pastedText(fd){ const el=$('#pfile'); const f=el&&el.files[0]; return f?await f.text():String(fd.get('paste')||'').trim(); }
+/* Inside the Android app, requests go through the phone's own networking, which browsers' cross-site rule does not apply to. */
+const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
+async function nativeGet(url,ms){
+  const call=window.Capacitor.nativePromise('CapacitorHttp','request',{url:url,method:'GET',headers:{Accept:'application/json'},connectTimeout:ms,readTimeout:ms});
+  const res=await Promise.race([call,new Promise((_,no)=>setTimeout(()=>no(new Error('timed out')),ms+2000))]);
+  if(res.status===404) throw new Error('no such character on the Armory');
+  if(res.status<200||res.status>=300) throw new Error('HTTP '+res.status);
+  return typeof res.data==='string'?res.data:JSON.stringify(res.data);
+}
 async function timedFetch(url,ms){
   const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms||12000);
   try{ return await fetch(url,{signal:ctl.signal,credentials:'omit',cache:'no-store'}); } finally{ clearTimeout(t); }
 }
 async function fetchArmory(url){
+  if(NATIVE){
+    try{ return readChar(await nativeGet(url+'/model.json',20000)); }
+    catch(e){ const err=new Error('Could not fetch this character from the Armory.'); err.detail=e&&e.message||String(e); throw err; }
+  }
   const routes=[];
   const custom=(db.settings.proxy||'').trim();
   const local=repoDataPath(url);
@@ -354,7 +367,7 @@ function applyImport(ch,d){
 }
 /* Characters listed in the repo's characters.txt (published by the sync job as data/index.json). */
 async function addFromRepoIndex(){
-  if(!/^https?:$/.test(location.protocol)) return 0;
+  if(NATIVE||!/^https?:$/.test(location.protocol)) return 0;
   let list; try{ const r=await timedFetch('data/index.json',5000); if(!r.ok) return 0; list=await r.json(); }catch(e){ return 0; }
   let added=0;
   for(const raw of (Array.isArray(list)?list:[])){
@@ -461,16 +474,17 @@ function renderCompare(){
 function renderMore(){
   $('#top').innerHTML='<h1>Backup &amp; settings</h1>';
   $('#main').innerHTML=
-    '<div class="card"><h3>Your data</h3><p class="muted small">Everything is stored in this browser only. Export a backup before clearing browser data, or to move your roster to another device.</p>'+
-      '<div class="row wrap"><button class="btn grow" data-act="export">Export backup</button><button class="btn grow" data-act="copy">Copy to clipboard</button><button class="btn grow" data-act="import">Import backup</button></div></div>'+
+    '<div class="card"><h3>Your data</h3><p class="muted small">Everything is stored on this device only. Export a backup now and then, and before uninstalling or clearing data, or to move your roster to another device.</p>'+
+      '<div class="row wrap"><button class="btn grow" data-act="export">Export backup</button>'+(NATIVE?'':'<button class="btn grow" data-act="copy">Copy to clipboard</button>')+'<button class="btn grow" data-act="import">Import backup</button></div></div>'+
+    (NATIVE?'<div class="card"><h3>Armory syncing</h3><p class="muted small">This app reads each character\'s public Armory page directly. The Armory itself updates when you log out of a character.</p><label for="region">Region for characters added by name</label><select id="region"><option value="us">Americas (US)</option><option value="eu">Europe (EU)</option></select></div>':
     '<div class="card"><h3>Armory syncing</h3><p class="muted small">Blizzard\'s site does not let other websites read it directly. Sync first looks for data saved in this site\'s own <code>data/</code> folder (kept fresh by the repo\'s sync job from <code>characters.txt</code>), then tries two free public relays, which are often unavailable. If all of that fails, each character offers a copy-and-paste import.</p>'+
       '<label for="region">Region for characters added by name</label><select id="region"><option value="us">Americas (US)</option><option value="eu">Europe (EU)</option></select>'+
-      '<details><summary>Use my own relay</summary><label for="proxy">Relay address (the Armory link is added to the end)</label><input type="url" id="proxy" placeholder="https://my-worker.example.workers.dev/?url=" value="'+esc(db.settings.proxy)+'"></details></div>'+
+      '<details><summary>Use my own relay</summary><label for="proxy">Relay address (the Armory link is added to the end)</label><input type="url" id="proxy" placeholder="https://my-worker.example.workers.dev/?url=" value="'+esc(db.settings.proxy)+'"></details></div>')+
     '<div class="card"><h3>Danger zone</h3><button class="btn danger" data-act="wipe">Delete all characters</button></div>'+
     '<p class="muted small" style="text-align:center">Fan-made tracker. Not affiliated with Blizzard Entertainment.</p>';
   $('#region').value=db.settings.region;
   $('#region').addEventListener('change',e=>{db.settings.region=e.target.value;save();});
-  $('#proxy').addEventListener('change',e=>{db.settings.proxy=e.target.value.trim();save();toast('Relay saved');});
+  const px=$('#proxy'); if(px) px.addEventListener('change',e=>{db.settings.proxy=e.target.value.trim();save();toast('Relay saved');});
 }
 
 /* ===== DIALOGS ===== */
@@ -512,7 +526,7 @@ function dlgAdd(){
         return;
       }
       if(isNew) db.chars.push(ch);
-      save(); closeDlg(); ui.tab='list'; ui.charId=ch.id; render(); toast(isNew?'Imported '+ch.name:'Updated '+ch.name);
+      save(); closeDlg(); showChar(ch.id); toast(isNew?'Imported '+ch.name:'Updated '+ch.name);
     });
 }
 function dlgEditChar(c){
@@ -531,7 +545,7 @@ function dlgEditChar(c){
       const target=isNew?{id:uid(),profs:[],gear:{},notes:''}:c;
       target.name=fd.get('name').trim(); target.level=Number(fd.get('level'))||null; target.cls=fd.get('cls'); target.race=fd.get('race').trim(); target.url=url;
       if(isNew) db.chars.push(target);
-      save(); closeDlg(); ui.tab='list'; ui.charId=target.id; render();
+      save(); closeDlg(); showChar(target.id);
     });
 }
 function dlgProf(c,i){
@@ -592,11 +606,17 @@ function dlgImport(){
       catch(e){ $('#imsg').textContent=e.message||'Could not read that backup.'; } });
 }
 
+function dlgExportText(){
+  openDlg('<h2>Export backup</h2><p class="small muted">Copy this text and keep it somewhere safe (a note, an email to yourself). Paste it into Import backup to restore.</p><textarea id="xtext" readonly style="min-height:160px">'+esc(JSON.stringify(db))+'</textarea>'+
+    '<div class="actions"><button class="btn" type="button" data-act="close">Close</button><button class="btn gold" value="copy">Copy</button></div>',
+    async()=>{ const t=$('#xtext'); t.focus(); t.select(); try{ await navigator.clipboard.writeText(t.value); toast('Backup copied'); }catch(e){ try{ document.execCommand('copy'); toast('Backup copied'); }catch(e2){ toast('Select the text and copy it by hand'); } } });
+}
+function showChar(id){ const same=history.state&&history.state.c===id; ui.tab='list'; ui.charId=id; if(!same){ try{ history.pushState({c:id},''); }catch(e){} } render(); window.scrollTo(0,0); }
 /* ===== ACTIONS ===== */
 const actions={
   tab(d){ ui.tab=d.tab; ui.charId=null; render(); window.scrollTo(0,0); },
-  open(d){ ui.tab='list'; ui.charId=d.id; render(); window.scrollTo(0,0); },
-  back(){ ui.charId=null; render(); },
+  open(d){ showChar(d.id); },
+  back(){ if(history.state&&history.state.c) history.back(); else{ ui.charId=null; render(); } },
   close(){ closeDlg(); },
   add(){ dlgAdd(); },
   editchar(){ dlgEditChar(getChar(ui.charId)); },
@@ -609,7 +629,7 @@ const actions={
   async syncall(d,el){ el.disabled=true; el.textContent='Syncing…'; let ok=0,bad=[]; const list=db.chars.filter(c=>c.url); const added=await addFromRepoIndex();
     for(let i=0;i<list.length;i++){ el.textContent='Syncing '+(i+1)+' of '+list.length+'…'; try{ await syncChar(list[i]); ok++; }catch(e){ bad.push(list[i].name); } }
     render(); toast((added?'Added '+added+'. ':'')+(bad.length?'Updated '+ok+'. Failed: '+bad.join(', '):'Updated '+ok+' character'+(ok===1?'':'s')),bad.length?5000:2600); },
-  export(){ const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}); const a=document.createElement('a');
+  export(){ if(NATIVE) return dlgExportText(); const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}); const a=document.createElement('a');
     a.href=URL.createObjectURL(blob); a.download='forever-roster-'+new Date().toISOString().slice(0,10)+'.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); },
   async copy(){ try{ await navigator.clipboard.writeText(JSON.stringify(db)); toast('Backup copied'); }catch(e){ toast('Copy was blocked. Use Export instead.'); } },
   import(){ dlgImport(); },
@@ -621,6 +641,7 @@ document.addEventListener('click',e=>{
   const fn=actions[el.dataset.act]; if(fn){ if(el.tagName==='BUTTON'&&el.type!=='submit') e.preventDefault(); fn(el.dataset,el); }
 });
 load(); render();
+window.addEventListener('popstate',e=>{ if(dlg.open){ closeDlg(); } ui.charId=e.state&&e.state.c&&getChar(e.state.c)?e.state.c:null; if(ui.charId) ui.tab='list'; render(); });
 if(!db.chars.length) addFromRepoIndex().then(n=>{ if(n){ render(); toast('Loaded '+n+' character'+(n===1?'':'s')); } });
 </script>
 </body>

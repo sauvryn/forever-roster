@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.sauvryn.foreverroster",
+  "appName": "Forever Roster",
+  "webDir": "www",
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}
