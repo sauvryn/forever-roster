@@ -76,7 +76,7 @@ nav.tabs button.on{color:var(--gold);border-top-color:var(--gold)}
 .seg button{flex:1;background:none;border:0;border-radius:7px;padding:9px 4px;color:var(--muted);cursor:pointer}
 .seg button.on{background:var(--panel2);color:var(--gold);font-weight:600}
 label{display:block;font-size:.8rem;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em}
-input[type=text],input[type=number],input[type=url],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);
+input[type=text],input[type=number],input[type=url],input[type=file],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);
   border-radius:8px;padding:10px;min-height:44px}
 textarea{min-height:90px;resize:vertical}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
@@ -98,6 +98,7 @@ td.best{color:var(--gold);font-weight:700}
   opacity:0;pointer-events:none;transition:opacity .2s;text-align:center}
 #toast.show{opacity:1}
 .note{background:var(--panel2);border-left:3px solid var(--gold-dim);padding:10px 12px;border-radius:6px;font-size:.88rem;margin:10px 0}
+code{background:var(--bg);padding:1px 4px;border-radius:4px;font-size:.9em}
 details summary{cursor:pointer;color:var(--gold);padding:8px 0}
 </style>
 </head>
@@ -172,7 +173,26 @@ function parseArmoryText(text){
     if(marker==='"character":'&&chunk) chunk='{"character":'+chunk+'}';
     if(chunk){ try{return JSON.parse(chunk);}catch(e){} }
   }
-  throw new Error('Could not find character data in that text.');
+  /* Last resort: the text is incomplete or mangled, so lift out whichever sections survived. */
+  const prof=extractJsonAfter(t,'"professions":'), gear=extractJsonAfter(t,'"gear":');
+  const c={name:'',professions:{},gear:{},_has:{profs:false,gear:false}};
+  try{ if(prof){ c.professions=JSON.parse(prof); c._has.profs=true; } }catch(e){}
+  try{ if(gear){ c.gear=JSON.parse(gear); c._has.gear=true; } }catch(e){}
+  if(c._has.profs||c._has.gear){
+    const m=re=>{ const x=t.match(re); return x?x[1]:''; };
+    c.name=m(/"name":"([^"]*)","professions"/); c.surname=m(/"surname":"([^"]*)"/);
+    c.level=m(/"level":(\d+)/); c.class={name:m(/"class":\{[^{}]*"name":"([^"]*)"/)}; c.race={name:m(/"race":\{[^{}]*"name":"([^"]*)"/)};
+    return {_salvaged:c};
+  }
+  throw new Error(describeBadPaste(t));
+}
+function describeBadPaste(t){
+  const head=t.slice(0,40).replace(/\s+/g,' ');
+  let hint='';
+  if(/^\s*<|<html/i.test(t.slice(0,300))) hint=' That looks like a web page, not the data page.';
+  else if(t[0]==='{'||t[0]==='"') hint=' It seems to be cut off part-way. Try the "choose a saved file" option instead.';
+  else if(!/[{"]/.test(t.slice(0,200))) hint=' That looks like a formatted view of the data. If the data page has a "Raw Data" tab or a "Pretty-print" tick box, switch to the raw view and copy again, or save the page and choose the file.';
+  return 'Could not read character data from that text ('+t.length+' characters, starting with: '+head+').'+hint;
 }
 
 /* Find the character object wherever Blizzard has nested it. */
@@ -228,6 +248,7 @@ function toChar(c){
 function readChar(text){
   const j=parseArmoryText(text);
   if(j&&Array.isArray(j.profs)&&j.name) return cleanChar(j);
+  if(j&&j._salvaged){ const d=toChar(j._salvaged); d._has=j._salvaged._has; return d; }
   const raw=findChar(j);
   if(!raw) throw new Error('That text has no character data in it.');
   return toChar(raw);
@@ -297,6 +318,11 @@ function barHtml(p){
 }
 
 /* ===== ARMORY IMPORT ===== */
+function nameFromUrl(url){ const m=String(url||'').match(/character\/([^\/?#]+)/); if(!m) return 'Unnamed';
+  return decodeURIComponent(m[1]).split('-').map(w=>w?w[0].toUpperCase()+w.slice(1):'').join(' '); }
+function repoListLink(){ const m=location.hostname.match(/^([^.]+)\.github\.io$/i); const repo=location.pathname.split('/')[1];
+  return m&&repo?'https://github.com/'+m[1]+'/'+repo+'/blob/HEAD/characters.txt':''; }
+async function pastedText(fd){ const el=$('#pfile'); const f=el&&el.files[0]; return f?await f.text():String(fd.get('paste')||'').trim(); }
 async function timedFetch(url,ms){
   const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms||12000);
   try{ return await fetch(url,{signal:ctl.signal,credentials:'omit',cache:'no-store'}); } finally{ clearTimeout(t); }
@@ -321,7 +347,10 @@ async function fetchArmory(url){
 }
 function applyImport(ch,d){
   ['name','level','race','cls','faction','ruleset','ilvl','avatar','armoryAt'].forEach(k=>{ if(d[k]!==''&&d[k]!=null) ch[k]=d[k]; });
-  ch.profs=d.profs; ch.gear=d.gear; ch.syncedAt=Date.now();
+  if(!d._has||d._has.profs) ch.profs=d.profs;
+  if(!d._has||d._has.gear) ch.gear=d.gear;
+  if(!ch.name) ch.name=nameFromUrl(ch.url);
+  ch.syncedAt=Date.now();
 }
 /* Characters listed in the repo's characters.txt (published by the sync job as data/index.json). */
 async function addFromRepoIndex(){
@@ -455,8 +484,11 @@ function closeDlg(){ if(dlg.open) dlg.close(); }
 dlg.addEventListener('click',e=>{ if(e.target===dlg) closeDlg(); });
 
 function pasteHelp(url){
-  return '<div class="note"><b>Copy-and-paste import</b><br>1. <a href="'+esc(url)+'/model.json" target="_blank" rel="noopener">Open this character\'s data page</a><br>2. Select all the text and copy it<br>3. Come back and paste it below</div>'+
-    '<label for="paste">Pasted data</label><textarea id="paste" name="paste" placeholder="{&quot;character&quot;: …"></textarea>';
+  const list=repoListLink();
+  return (list?'<div class="note"><b>Easiest: add it to the sync list</b><br>Add this link as a new line in <a href="'+esc(list)+'" target="_blank" rel="noopener">characters.txt</a> in your repository (tap the pencil to edit). The sync job fetches it within a minute or two; then tap <b>Sync all</b> here.<input type="text" readonly value="'+esc(url)+'" onfocus="this.select()" style="margin-top:8px"></div>':'')+
+    '<div class="note"><b>Or import by hand</b><br>1. <a href="'+esc(url)+'/model.json" target="_blank" rel="noopener">Open this character\'s data page</a> (a wall of text starting with <code>{"character"</code>)<br>2. Select all of it and copy, or save the page as a file<br>3. Paste it below, or choose the saved file</div>'+
+    '<label for="paste">Pasted data</label><textarea id="paste" name="paste" placeholder="{&quot;character&quot;: …"></textarea>'+
+    '<label for="pfile">…or choose a saved file</label><input type="file" id="pfile" accept=".json,.txt,.html,application/json,text/*">';
 }
 function dlgAdd(){
   openDlg('<h2>Add a character</h2><label for="url">Armory link, or first and last name</label><input type="text" id="url" name="url" placeholder="https://worldofwarcraft.blizzard.com/…  or  Alessa Moriarty" autocomplete="off" autocapitalize="off">'+
@@ -469,7 +501,7 @@ function dlgAdd(){
       catch(e){ msg.textContent=e.message; msg.style.color='var(--danger)'; return; }
       let ch=db.chars.find(c=>c.url===url); const isNew=!ch;
       if(isNew) ch={id:uid(),name:'',url:url,profs:[],gear:{},notes:''};
-      const pasted=(fd.get('paste')||'').trim();
+      const pasted=await pastedText(fd);
       try{
         if(pasted){ applyImport(ch,readChar(pasted)); }
         else{ msg.style.color=''; msg.textContent='Fetching…'; dlg.querySelectorAll('button').forEach(b=>b.disabled=true);
@@ -546,7 +578,7 @@ function dlgGear(c,slot){
 function dlgSyncFail(c,err){
   openDlg('<h2>Sync did not work</h2><p class="small muted">'+esc(err.message)+(err.detail?'<br>'+esc(err.detail):'')+'</p>'+pasteHelp(c.url)+
     '<div id="pmsg" class="small" style="color:var(--danger)"></div><div class="actions"><button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Import pasted data</button></div>',
-    fd=>{ try{ applyImport(c,readChar(fd.get('paste'))); save(); closeDlg(); render(); toast('Updated '+c.name); }
+    async fd=>{ try{ applyImport(c,readChar(await pastedText(fd))); save(); closeDlg(); render(); toast('Updated '+c.name); }
           catch(e){ $('#pmsg').textContent=e.message; } });
 }
 function dlgImport(){
