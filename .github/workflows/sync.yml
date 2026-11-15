@@ -1,0 +1,57 @@
+name: Sync Armory data
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # every 6 hours
+  workflow_dispatch:          # "Run workflow" button
+  push:
+    paths: ["characters.txt"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: armory-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch each character's Armory data
+        run: |
+          mkdir -p data
+          : > urls.tmp
+          while IFS= read -r line || [ -n "$line" ]; do
+            url="$(printf '%s' "$line" | sed -e 's/#.*//' -e 's/[[:space:]]//g' -e 's:[?].*$::' -e 's:/*$::')"
+            [ -z "$url" ] && continue
+            if ! printf '%s' "$url" | grep -Eq '^https://worldofwarcraft\.blizzard\.com/([a-z]{2}-[a-z]{2}/)?forever/[a-z]{2}/armory/character/[^/]+$'; then
+              echo "::warning::Skipping line that is not a WoW Forever Armory link: $url"
+              continue
+            fi
+            region="$(printf '%s' "$url" | sed -E 's:.*/forever/([a-z]{2})/.*:\1:')"
+            slug="$(printf '%s' "${url##*/}" | tr '[:upper:]' '[:lower:]')"
+            echo "$url" >> urls.tmp
+            if curl -fsSL --max-time 30 --retry 2 \
+                 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" \
+                 -H "Accept: application/json" \
+                 "$url/model.json" -o fetch.tmp \
+               && jq -e '.. | objects | select(has("professions"))' fetch.tmp > /dev/null; then
+              mv fetch.tmp "data/$region-$slug.json"
+              echo "Updated $region-$slug"
+            else
+              echo "::warning::Could not fetch $url (keeping the previous copy, if any)"
+            fi
+            sleep 2
+          done < characters.txt
+          jq -R . urls.tmp | jq -s . > data/index.json
+          rm -f urls.tmp fetch.tmp
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || { git commit -m "Sync Armory data"; git push; }
