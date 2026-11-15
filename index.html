@@ -53,6 +53,9 @@ nav.tabs button.on{color:var(--gold);border-top-color:var(--gold)}
 .avatar{width:48px;height:48px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);flex:none;object-fit:cover;
   display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem}
 .name{font-family:var(--serif);font-size:1.1rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mover{display:flex;gap:6px;flex:none}
+.mover .btn{padding:0 14px;min-height:44px;font-size:.9rem}
+.mover .btn[disabled]{opacity:.25}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:.8rem;white-space:nowrap}
 .chip b{color:var(--gold);font-weight:600}
@@ -288,6 +291,7 @@ function load(){
   try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw); if(d&&Array.isArray(d.chars)){ db=d; db.settings=Object.assign({proxy:'',region:'us'},d.settings||{}); } } }
   catch(e){ memOnly=true; }
 }
+function migrateOrder(){ if(!db.settings.manualOrder){ db.chars.sort((a,b)=>(b.level||0)-(a.level||0)||String(a.name).localeCompare(String(b.name))); db.settings.manualOrder=true; save(); } }
 function save(){ try{ localStorage.setItem(KEY,JSON.stringify(db)); }catch(e){ memOnly=true; } }
 const ui={tab:'list',charId:null,cmode:'prof',cprof:'Cooking',cslot:'MAIN_HAND'};
 try{ Object.assign(ui,JSON.parse(sessionStorage.getItem(KEY+'-ui')||'{}')); }catch(e){}
@@ -304,7 +308,10 @@ let toastTimer;
 function toast(msg,ms){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),ms||2600); }
 function ago(ts){ if(!ts) return 'never'; const m=Math.round((Date.now()-ts)/60000);
   if(m<1) return 'just now'; if(m<60) return m+' min ago'; if(m<1440) return Math.round(m/60)+' h ago'; return Math.round(m/1440)+' d ago'; }
-function sortedChars(){ return db.chars.slice().sort((a,b)=>(b.level||0)-(a.level||0)||a.name.localeCompare(b.name)); }
+/* Characters are shown in the order they are stored; the arrows on the list move them. */
+function sortedChars(){ return db.chars.slice(); }
+function moveChar(id,dir){ const i=db.chars.findIndex(c=>c.id===id), j=i+dir; if(i<0||j<0||j>=db.chars.length) return false;
+  const t=db.chars[i]; db.chars[i]=db.chars[j]; db.chars[j]=t; save(); return true; }
 function avatarHtml(c){
   const u=safeImg(c.avatar);
   return u?'<img class="avatar" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">'
@@ -382,6 +389,7 @@ async function addFromRepoIndex(){
 async function syncChar(ch){ applyImport(ch,await fetchArmory(ch.url)); save(); }
 
 /* ===== RENDER ===== */
+let reorder=false;
 function render(){
   saveUi();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
@@ -392,19 +400,23 @@ function render(){
   renderList();
 }
 function renderList(){
-  $('#top').innerHTML='<h1><span>Forever</span> Roster</h1><button class="btn gold sm" data-act="add">+ Add</button>';
   const chars=sortedChars();
+  if(chars.length<2) reorder=false;
+  $('#top').innerHTML='<h1><span>Forever</span> Roster</h1>'+
+    (reorder?'<button class="btn gold sm" data-act="reorder">Done</button>'
+            :(chars.length>1?'<button class="btn sm" data-act="reorder">Reorder</button>':'')+'<button class="btn gold sm" data-act="add">+ Add</button>');
   if(!chars.length){
     $('#main').innerHTML='<div class="empty"><h2>No characters yet</h2><p>Add your first character by pasting its Armory link, or enter one by hand.</p><button class="btn gold" data-act="add">Add a character</button></div>';
     return;
   }
     $('#main').innerHTML=(memOnly?'<div class="note">This browser is blocking storage, so changes will be lost when you close the page. Use Backup to export.</div>':'')+
-    chars.map(c=>'<div class="card tap" data-act="open" data-id="'+c.id+'"><div class="row">'+avatarHtml(c)+
+    chars.map((c,i)=>'<div class="card'+(reorder?'':' tap" data-act="open')+'" data-id="'+c.id+'"><div class="row">'+avatarHtml(c)+
       '<div class="grow"><div class="name" style="color:'+classColor(c.cls)+'">'+esc(c.name)+'</div><div class="muted small">'+esc(subline(c))+
-      (c.ilvl!=null?' · ilvl '+c.ilvl:'')+'</div></div></div>'+
-      ((c.profs||[]).length?'<div class="chips">'+c.profs.map(p=>'<span class="chip">'+esc(p.name)+' <b>'+p.skill+'</b></span>').join('')+'</div>':'')+
+      (c.ilvl!=null?' · ilvl '+c.ilvl:'')+'</div></div>'+
+      (reorder?'<div class="mover"><button class="btn sm" data-act="move" data-id="'+c.id+'" data-dir="-1" aria-label="Move '+esc(c.name)+' up"'+(i===0?' disabled':'')+'>▲</button><button class="btn sm" data-act="move" data-id="'+c.id+'" data-dir="1" aria-label="Move '+esc(c.name)+' down"'+(i===chars.length-1?' disabled':'')+'>▼</button></div>':'')+'</div>'+
+      (!reorder&&(c.profs||[]).length?'<div class="chips">'+c.profs.map(p=>'<span class="chip">'+esc(p.name)+' <b>'+p.skill+'</b></span>').join('')+'</div>':'')+
       '</div>').join('')+
-    '<button class="btn ghost" style="width:100%" data-act="syncall">Sync all</button>';
+    (reorder?'':'<button class="btn ghost" style="width:100%" data-act="syncall">Sync all</button>');
 }
 function renderChar(c){
   $('#top').innerHTML='<button class="btn ghost sm" data-act="back" aria-label="Back">‹ Back</button><h1 style="color:'+classColor(c.cls)+'">'+esc(c.name)+'</h1><button class="btn sm" data-act="editchar">Edit</button>';
@@ -602,7 +614,7 @@ function dlgImport(){
     async fd=>{ try{ const f=$('#bfile').files[0]; const txt=f?await f.text():fd.get('text'); const d=JSON.parse(txt);
         if(!d||!Array.isArray(d.chars)) throw new Error('That is not a Forever Roster backup.');
         d.chars=d.chars.filter(c=>c&&typeof c==='object'&&c.name).map(c=>Object.assign({profs:[],gear:{},notes:''},c,{id:c.id||uid()}));
-        db={chars:d.chars,settings:Object.assign({proxy:'',region:'us'},d.settings||{})}; save(); closeDlg(); ui.charId=null; ui.tab='list'; render(); toast('Imported '+db.chars.length+' characters'); }
+        db={chars:d.chars,settings:Object.assign({proxy:'',region:'us'},d.settings||{})}; migrateOrder(); save(); closeDlg(); ui.charId=null; ui.tab='list'; render(); toast('Imported '+db.chars.length+' characters'); }
       catch(e){ $('#imsg').textContent=e.message||'Could not read that backup.'; } });
 }
 
@@ -614,10 +626,12 @@ function dlgExportText(){
 function showChar(id){ const same=history.state&&history.state.c===id; ui.tab='list'; ui.charId=id; if(!same){ try{ history.pushState({c:id},''); }catch(e){} } render(); window.scrollTo(0,0); }
 /* ===== ACTIONS ===== */
 const actions={
-  tab(d){ ui.tab=d.tab; ui.charId=null; render(); window.scrollTo(0,0); },
+  tab(d){ reorder=false; ui.tab=d.tab; ui.charId=null; render(); window.scrollTo(0,0); },
   open(d){ showChar(d.id); },
   back(){ if(history.state&&history.state.c) history.back(); else{ ui.charId=null; render(); } },
   close(){ closeDlg(); },
+  move(d){ if(moveChar(d.id,Number(d.dir))) render(); },
+  reorder(){ reorder=!reorder; render(); },
   add(){ dlgAdd(); },
   editchar(){ dlgEditChar(getChar(ui.charId)); },
   addprof(){ dlgProf(getChar(ui.charId),null); },
@@ -640,7 +654,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('a')) return;
   const fn=actions[el.dataset.act]; if(fn){ if(el.tagName==='BUTTON'&&el.type!=='submit') e.preventDefault(); fn(el.dataset,el); }
 });
-load(); render();
+load(); migrateOrder(); render();
 window.addEventListener('popstate',e=>{ if(dlg.open){ closeDlg(); } ui.charId=e.state&&e.state.c&&getChar(e.state.c)?e.state.c:null; if(ui.charId) ui.tab='list'; render(); });
 if(!db.chars.length) addFromRepoIndex().then(n=>{ if(n){ render(); toast('Loaded '+n+' character'+(n===1?'':'s')); } });
 </script>
