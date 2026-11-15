@@ -1,0 +1,76 @@
+name: Build Android app
+
+on:
+  workflow_dispatch:            # "Run workflow" button
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - package.json
+      - capacitor.config.json
+      - debug.keystore
+      - .github/workflows/build-apk.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install the Android wrapper (Capacitor)
+        run: npm install --no-audit --no-fund
+
+      - name: Generate the Android project around index.html
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          npx cap add android
+          # Each build gets a higher version number so it installs over the previous one.
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]*\"/versionName \"1.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Use the repository's signing key
+        # The same key every time, so updates install over the old app and keep its saved data.
+        run: |
+          mkdir -p "$HOME/.android"
+          cp debug.keystore "$HOME/.android/debug.keystore"
+
+      - name: Build the APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Collect the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk forever-roster.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forever-roster-apk
+          path: forever-roster.apk
+
+      - name: Publish as the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="Build ${{ github.run_number }}. Download forever-roster.apk on your Android phone and open it to install or update."
+          if gh release view android >/dev/null 2>&1; then
+            gh release upload android forever-roster.apk --clobber
+            gh release edit android --notes "$notes" --latest
+          else
+            gh release create android forever-roster.apk --title "Forever Roster for Android" --notes "$notes" --latest
+          fi
