@@ -1,0 +1,126 @@
+{
+ "name": "Alessa Moriarty",
+ "level": 13,
+ "race": "Undead",
+ "cls": "Warlock",
+ "faction": "Horde",
+ "ruleset": "Roleplay",
+ "ilvl": 6,
+ "avatar": "https://render.worldofwarcraft.com/forever-us/character/71/15322695-avatar.jpg",
+ "armoryAt": 1794753025000,
+ "profs": [
+  {
+   "name": "Skinning",
+   "skill": 109,
+   "max": 150,
+   "primary": true
+  },
+  {
+   "name": "Herbalism",
+   "skill": 66,
+   "max": 150,
+   "primary": true
+  },
+  {
+   "name": "Cooking",
+   "skill": 50,
+   "max": 75,
+   "primary": false
+  },
+  {
+   "name": "Fishing",
+   "skill": 1,
+   "max": 75,
+   "primary": false
+  },
+  {
+   "name": "First Aid",
+   "skill": 1,
+   "max": 75,
+   "primary": false
+  }
+ ],
+ "gear": {
+  "BACK": {
+   "name": "Reinforced Linen Cape",
+   "q": "UNCOMMON",
+   "ilvl": 12,
+   "type": "Cloth",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/133759.jpg",
+   "slotName": "Back"
+  },
+  "CHEST": {
+   "name": "Barbaric Linen Vest",
+   "q": "UNCOMMON",
+   "ilvl": 14,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132715.jpg",
+   "slotName": "Chest"
+  },
+  "FEET": {
+   "name": "Soft-soled Linen Boots",
+   "q": "UNCOMMON",
+   "ilvl": 16,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132543.jpg",
+   "slotName": "Feet"
+  },
+  "HANDS": {
+   "name": "Heavy Linen Gloves",
+   "q": "UNCOMMON",
+   "ilvl": 10,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132939.jpg",
+   "slotName": "Hands"
+  },
+  "LEGS": {
+   "name": "Handstitched Linen Britches",
+   "q": "UNCOMMON",
+   "ilvl": 14,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/134587.jpg",
+   "slotName": "Legs"
+  },
+  "RANGED": {
+   "name": "Greater Magic Wand",
+   "q": "UNCOMMON",
+   "ilvl": 23,
+   "type": "Wand",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/135144.jpg",
+   "slotName": "Ranged"
+  },
+  "WAIST": {
+   "name": "Linen Belt",
+   "q": "COMMON",
+   "ilvl": 9,
+   "type": "Cloth",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132494.jpg",
+   "slotName": "Waist"
+  },
+  "MAIN_HAND": {
+   "name": "Sturdy Quarterstaff of the Eagle",
+   "q": "UNCOMMON",
+   "ilvl": 13,
+   "type": "Staff",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/135145.jpg",
+   "slotName": "Main Hand"
+  },
+  "WRIST": {
+   "name": "Mogra's Friendship Bracelet",
+   "q": "UNCOMMON",
+   "ilvl": 10,
+   "type": "Cloth",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132603.jpg",
+   "slotName": "Wrist"
+  }
+ }
+}

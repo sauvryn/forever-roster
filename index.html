@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14110f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Forever Roster</title>
+<style>
+:root{
+  --bg:#14110f; --panel:#1e1a17; --panel2:#28221e; --line:#3a322b;
+  --text:#ece4d8; --muted:#9c9082; --gold:#d9a441; --gold-dim:#8a6a2c;
+  --danger:#d9534f; --ok:#6fbf73;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 var(--sans);-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--serif);font-weight:600;margin:0;letter-spacing:.01em}
+a{color:var(--gold)}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--text)}
+header.top{position:sticky;top:0;z-index:5;background:rgba(20,17,15,.94);backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));
+  display:flex;align-items:center;gap:10px;min-height:56px}
+header.top h1{font-size:1.25rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+header.top h1 span{color:var(--gold)}
+main{max-width:720px;margin:0 auto;padding:14px 14px 24px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--panel);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;background:none;border:0;padding:10px 4px 12px;color:var(--muted);font-size:.8rem;
+  display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-top:2px solid transparent}
+nav.tabs button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button.on{color:var(--gold);border-top-color:var(--gold)}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer;min-height:44px}
+.btn:active{background:var(--line)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#1a1408;font-weight:600}
+.btn.ghost{background:none}
+.btn.danger{color:var(--danger);border-color:#5a2a28}
+.btn.sm{padding:6px 10px;min-height:36px;font-size:.9rem}
+.btn[disabled]{opacity:.5}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.card.tap{cursor:pointer}
+.card.tap:active{background:var(--panel2)}
+.avatar{width:48px;height:48px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);flex:none;object-fit:cover;
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem}
+.name{font-family:var(--serif);font-size:1.1rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:.8rem;white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.section{margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+.section h2{font-size:1rem;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;flex:1}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;min-height:52px}
+.item:last-child{border-bottom:0}
+.item:active{background:var(--panel2)}
+.icon{width:36px;height:36px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);flex:none;object-fit:cover}
+.slot{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{position:relative;height:8px;border-radius:4px;background:var(--panel2);margin-top:6px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:4px}
+.bar b{position:absolute;top:0;bottom:0;width:2px;background:var(--muted);opacity:.7}
+.q-POOR{color:#9d9d9d}.q-COMMON{color:#fff}.q-UNCOMMON{color:#1eff00}.q-RARE{color:#3b9bff}
+.q-EPIC{color:#b65cf5}.q-LEGENDARY{color:#ff8000}.q-ARTIFACT{color:#e6cc80}
+.empty{text-align:center;padding:36px 16px;color:var(--muted)}
+.empty h2{color:var(--text);margin-bottom:8px;font-size:1.3rem}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;background:none;border:0;border-radius:7px;padding:9px 4px;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--panel2);color:var(--gold);font-weight:600}
+label{display:block;font-size:.8rem;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em}
+input[type=text],input[type=number],input[type=url],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:10px;min-height:44px}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:16px;
+  width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+dialog h2{font-size:1.2rem;margin-bottom:6px}
+.actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.actions .btn{flex:1}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{font-weight:600;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;background:var(--panel)}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);border-right:1px solid var(--line)}
+td.best{color:var(--gold);font-weight:700}
+#toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000;
+  border:1px solid var(--gold-dim);color:var(--text);padding:10px 16px;border-radius:10px;max-width:90vw;z-index:20;
+  opacity:0;pointer-events:none;transition:opacity .2s;text-align:center}
+#toast.show{opacity:1}
+.note{background:var(--panel2);border-left:3px solid var(--gold-dim);padding:10px 12px;border-radius:6px;font-size:.88rem;margin:10px 0}
+details summary{cursor:pointer;color:var(--gold);padding:8px 0}
+</style>
+</head>
+<body>
+<header class="top" id="top"></header>
+<main id="main"></main>
+<nav class="tabs" id="tabs">
+  <button data-act="tab" data-tab="list"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.900 1.900 6.500 5.500"/><circle cx="17.5" cy="9.500" r="2.500"/><path d="M17.500 14.500c2.200 0 3.700 1.300 4.200 3.700"/></svg>Characters</button>
+  <button data-act="tab" data-tab="compare"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Compare</button>
+  <button data-act="tab" data-tab="more"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Backup</button>
+</nav>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status"></div>
+
+<script>
+/* ===== PURE LOGIC (no DOM) ===== */
+const PRIMARY=['Alchemy','Blacksmithing','Enchanting','Engineering','Herbalism','Leatherworking','Mining','Skinning','Tailoring'];
+const SECONDARY=['Cooking','First Aid','Fishing'];
+const SLOTS=[['HEAD','Head'],['NECK','Neck'],['SHOULDER','Shoulder'],['BACK','Back'],['CHEST','Chest'],['SHIRT','Shirt'],
+  ['TABARD','Tabard'],['WRIST','Wrist'],['HANDS','Hands'],['WAIST','Waist'],['LEGS','Legs'],['FEET','Feet'],
+  ['FINGER_1','Ring 1'],['FINGER_2','Ring 2'],['TRINKET_1','Trinket 1'],['TRINKET_2','Trinket 2'],
+  ['MAIN_HAND','Main Hand'],['OFF_HAND','Off Hand'],['RANGED','Ranged']];
+const CLASSES={Warrior:'#C69B6D',Paladin:'#F48CBA',Hunter:'#AAD372',Rogue:'#FFF468',Priest:'#FFFFFF',Shaman:'#3b9bff',Mage:'#3FC7EB',Warlock:'#8788EE',Druid:'#FF7C0A'};
+const QUALITIES=['POOR','COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'];
+const SKILL_CAP=300;
+const ARMORY_HOST='worldofwarcraft.blizzard.com';
+const PROXIES=[
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)
+];
+
+/* Turn "First Last" or a pasted Armory link into a clean character URL. */
+function normalizeArmoryUrl(input,region){
+  let s=String(input||'').trim();
+  if(!s) return '';
+  if(!/[\/.]/.test(s)){
+    const slug=s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'');
+    if(!slug) return '';
+    const r=region==='eu'?'eu':'us';
+    return 'https://'+ARMORY_HOST+'/'+(r==='eu'?'en-gb':'en-us')+'/forever/'+r+'/armory/character/'+slug;
+  }
+  if(!/^https?:\/\//i.test(s)) s='https://'+s;
+  let u; try{u=new URL(s);}catch(e){throw new Error('That does not look like a web address.');}
+  if(u.hostname!==ARMORY_HOST) throw new Error('Only links from '+ARMORY_HOST+' can be imported.');
+  const m=u.pathname.match(/^(\/[a-z]{2}-[a-z]{2})?\/forever\/[a-z]{2}\/armory\/character\/[^\/]+/i);
+  if(!m) throw new Error('That is not a WoW Forever character page.');
+  return 'https://'+ARMORY_HOST+m[0];
+}
+
+/* Pull the first complete {...} JSON object that follows `marker` in a blob of text. */
+function extractJsonAfter(text,marker){
+  const at=text.indexOf(marker); if(at<0) return null;
+  const start=text.indexOf('{',at); if(start<0) return null;
+  let depth=0,inStr=false,esc=false;
+  for(let i=start;i<text.length;i++){
+    const ch=text[i];
+    if(inStr){ if(esc) esc=false; else if(ch==='\\') esc=true; else if(ch==='"') inStr=false; continue; }
+    if(ch==='"') inStr=true;
+    else if(ch==='{') depth++;
+    else if(ch==='}'){ depth--; if(depth===0) return text.slice(start,i+1); }
+  }
+  return null;
+}
+
+/* Accepts model.json text OR the whole page's HTML source. */
+function parseArmoryText(text){
+  const t=String(text||'').trim();
+  if(!t) throw new Error('Nothing to read.');
+  if(t[0]==='{'){ try{return JSON.parse(t);}catch(e){} }
+  for(const marker of ['characterProfileInitialState','"reactMounts"','"character":']){
+    let chunk=extractJsonAfter(t,marker);
+    if(marker==='"character":'&&chunk) chunk='{"character":'+chunk+'}';
+    if(chunk){ try{return JSON.parse(chunk);}catch(e){} }
+  }
+  throw new Error('Could not find character data in that text.');
+}
+
+/* Find the character object wherever Blizzard has nested it. */
+function findChar(o,depth){
+  depth=depth||0;
+  if(!o||typeof o!=='object'||depth>7) return null;
+  if(!Array.isArray(o)&&o.name&&o.professions&&typeof o.professions==='object'&&(o.gear||o.class)) return o;
+  for(const k of Object.keys(o)){ const r=findChar(o[k],depth+1); if(r) return r; }
+  return null;
+}
+
+function convProf(p,primary){
+  const tiers=Array.isArray(p.tiers)&&p.tiers.length?p.tiers:[p];
+  const t=tiers.reduce((a,b)=>((b.maxSkillPoints||0)>(a.maxSkillPoints||0)?b:a));
+  return {name:String(p.name||t.name||'Unknown'),skill:Number(t.skillPoints)||0,max:Number(t.maxSkillPoints)||0,primary:!!primary};
+}
+
+/* Blizzard's character object -> the small shape this app stores. */
+function toChar(c){
+  const out={
+    name:[c.name,c.surname].filter(Boolean).join(' '),
+    level:Number(c.level)||null,
+    race:c.race&&c.race.name||'', cls:c.class&&c.class.name||'',
+    faction:c.faction&&c.faction.name||'', ruleset:c.ruleset&&c.ruleset.name||'',
+    ilvl:c.averageItemLevel!=null?Number(c.averageItemLevel):null,
+    avatar:c.avatar&&c.avatar.url||'',
+    armoryAt:c.lastUpdatedTimestamp&&c.lastUpdatedTimestamp.epoch||null,
+    profs:[],gear:{}
+  };
+  const pr=c.professions||{};
+  (pr.primaries||[]).forEach(p=>out.profs.push(convProf(p,true)));
+  (pr.secondaries||[]).forEach(p=>out.profs.push(convProf(p,false)));
+  const gear=c.gear||{};
+  Object.keys(gear).forEach(key=>{
+    [].concat(gear[key]).forEach(v=>{
+      if(!v||typeof v!=='object'||!v.name) return;
+      const slot=(v.slot&&v.slot.type)||key.toUpperCase();
+      let icon='';
+      try{icon=v.media.content.assets[0].value||'';}catch(e){}
+      out.gear[slot]={
+        name:String(v.name), q:v.quality&&v.quality.type||'COMMON',
+        ilvl:v.level&&v.level.value!=null?Number(v.level.value):null,
+        type:v.item_subclass&&v.item_subclass.name||'',
+        ench:(v.enchantments||[]).map(e=>e&&e.display_string).filter(Boolean).join('; ').replace(/^Enchanted:\s*/,''),
+        icon:icon, slotName:v.slot&&v.slot.name||''
+      };
+    });
+  });
+  return out;
+}
+
+/* Any supported text (Armory JSON, page source, or this app's own saved format) -> stored shape. */
+function readChar(text){
+  const j=parseArmoryText(text);
+  if(j&&Array.isArray(j.profs)&&j.name) return cleanChar(j);
+  const raw=findChar(j);
+  if(!raw) throw new Error('That text has no character data in it.');
+  return toChar(raw);
+}
+function cleanChar(j){
+  const str=v=>v==null?'':String(v), num=v=>(v==null||v===''||isNaN(Number(v)))?null:Number(v);
+  const out={name:str(j.name),level:num(j.level),race:str(j.race),cls:str(j.cls),faction:str(j.faction),ruleset:str(j.ruleset),
+    ilvl:num(j.ilvl),avatar:str(j.avatar),armoryAt:num(j.armoryAt),profs:[],gear:{}};
+  (j.profs||[]).forEach(p=>{ if(p&&p.name) out.profs.push({name:str(p.name),skill:num(p.skill)||0,max:num(p.max)||0,primary:!!p.primary}); });
+  Object.keys(j.gear||{}).forEach(k=>{ const g=j.gear[k]; if(g&&g.name) out.gear[k]={name:str(g.name),q:str(g.q||'COMMON'),ilvl:num(g.ilvl),type:str(g.type),ench:str(g.ench),icon:str(g.icon),slotName:str(g.slotName)}; });
+  return out;
+}
+/* Where the repo's sync job stores a character: data/<region>-<slug>.json */
+function repoDataPath(url){
+  const m=String(url).match(/\/forever\/([a-z]{2})\/armory\/character\/([^\/?#]+)/i);
+  return m?'data/'+encodeURIComponent(m[1].toLowerCase()+'-'+decodeURIComponent(m[2]).toLowerCase())+'.json':'';
+}
+function profOf(ch,name){ return (ch.profs||[]).find(p=>p.name.toLowerCase()===name.toLowerCase()); }
+function allProfNames(chars){
+  const seen=new Set(PRIMARY.concat(SECONDARY).map(n=>n.toLowerCase()));
+  const extra=[];
+  chars.forEach(c=>(c.profs||[]).forEach(p=>{const k=p.name.toLowerCase(); if(!seen.has(k)){seen.add(k);extra.push(p.name);}}));
+  return {primary:PRIMARY,secondary:SECONDARY,extra:extra.sort()};
+}
+function allSlots(chars){
+  const list=SLOTS.slice(), seen=new Set(list.map(s=>s[0]));
+  chars.forEach(c=>Object.keys(c.gear||{}).forEach(k=>{ if(!seen.has(k)){seen.add(k);list.push([k,(c.gear[k].slotName)||k]);} }));
+  return list;
+}
+/* ===== END PURE LOGIC ===== */
+
+/* ===== STORAGE ===== */
+const KEY='wowf-roster-v1';
+let db={chars:[],settings:{proxy:'',region:'us'}};
+let memOnly=false;
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){ const d=JSON.parse(raw); if(d&&Array.isArray(d.chars)){ db=d; db.settings=Object.assign({proxy:'',region:'us'},d.settings||{}); } } }
+  catch(e){ memOnly=true; }
+}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(db)); }catch(e){ memOnly=true; } }
+const ui={tab:'list',charId:null,cmode:'prof',cprof:'Cooking',cslot:'MAIN_HAND'};
+try{ Object.assign(ui,JSON.parse(sessionStorage.getItem(KEY+'-ui')||'{}')); }catch(e){}
+function saveUi(){ try{ sessionStorage.setItem(KEY+'-ui',JSON.stringify(ui)); }catch(e){} }
+
+/* ===== HELPERS ===== */
+const $=s=>document.querySelector(s);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function getChar(id){ return db.chars.find(c=>c.id===id); }
+function classColor(cls){ return CLASSES[cls]||'var(--text)'; }
+function safeImg(url){ return /^https:\/\/render\.worldofwarcraft\.com\//.test(url||'')?url:''; }
+let toastTimer;
+function toast(msg,ms){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),ms||2600); }
+function ago(ts){ if(!ts) return 'never'; const m=Math.round((Date.now()-ts)/60000);
+  if(m<1) return 'just now'; if(m<60) return m+' min ago'; if(m<1440) return Math.round(m/60)+' h ago'; return Math.round(m/1440)+' d ago'; }
+function sortedChars(){ return db.chars.slice().sort((a,b)=>(b.level||0)-(a.level||0)||a.name.localeCompare(b.name)); }
+function avatarHtml(c){
+  const u=safeImg(c.avatar);
+  return u?'<img class="avatar" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">'
+          :'<div class="avatar" style="color:'+classColor(c.cls)+'">'+esc((c.name||'?')[0].toUpperCase())+'</div>';
+}
+function subline(c){ return [c.level?'Level '+c.level:'',c.race,c.cls].filter(Boolean).join(' '); }
+function barHtml(p){
+  const w=Math.max(0,Math.min(100,(p.skill/SKILL_CAP)*100));
+  const cap=p.max&&p.max<SKILL_CAP?'<b style="left:'+(p.max/SKILL_CAP*100)+'%"></b>':'';
+  return '<div class="bar" title="'+p.skill+' of '+SKILL_CAP+'"><i style="width:'+w+'%"></i>'+cap+'</div>';
+}
+
+/* ===== ARMORY IMPORT ===== */
+async function timedFetch(url,ms){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms||12000);
+  try{ return await fetch(url,{signal:ctl.signal,credentials:'omit',cache:'no-store'}); } finally{ clearTimeout(t); }
+}
+async function fetchArmory(url){
+  const routes=[];
+  const custom=(db.settings.proxy||'').trim();
+  const local=repoDataPath(url);
+  if(local&&/^https?:$/.test(location.protocol)) routes.push(['repo data',local,5000]);
+  routes.push(['direct',url+'/model.json',6000]);
+  if(custom) routes.push(['your relay',custom+encodeURIComponent(url+'/model.json'),12000]);
+  PROXIES.forEach((p,i)=>routes.push(['relay '+(i+1),p(url+'/model.json'),8000]));
+  const errors=[];
+  for(const [label,target,ms] of routes){
+    try{
+      const r=await timedFetch(target,ms);
+      if(!r.ok) throw new Error(r.status===404?'not found':'HTTP '+r.status);
+      return readChar(await r.text());
+    }catch(e){ errors.push(label+': '+(e.name==='AbortError'?'timed out':e.name==='TypeError'?'blocked':e.message)); }
+  }
+  const err=new Error('Could not fetch this character automatically.'); err.detail=errors.join(' · '); throw err;
+}
+function applyImport(ch,d){
+  ['name','level','race','cls','faction','ruleset','ilvl','avatar','armoryAt'].forEach(k=>{ if(d[k]!==''&&d[k]!=null) ch[k]=d[k]; });
+  ch.profs=d.profs; ch.gear=d.gear; ch.syncedAt=Date.now();
+}
+/* Characters listed in the repo's characters.txt (published by the sync job as data/index.json). */
+async function addFromRepoIndex(){
+  if(!/^https?:$/.test(location.protocol)) return 0;
+  let list; try{ const r=await timedFetch('data/index.json',5000); if(!r.ok) return 0; list=await r.json(); }catch(e){ return 0; }
+  let added=0;
+  for(const raw of (Array.isArray(list)?list:[])){
+    let url; try{ url=normalizeArmoryUrl(raw); }catch(e){ continue; }
+    if(!url||db.chars.some(c=>c.url===url)) continue;
+    const ch={id:uid(),name:'',url:url,profs:[],gear:{},notes:''};
+    try{ applyImport(ch,await fetchArmory(url)); db.chars.push(ch); added++; }catch(e){}
+  }
+  if(added) save();
+  return added;
+}
+async function syncChar(ch){ applyImport(ch,await fetchArmory(ch.url)); save(); }
+
+/* ===== RENDER ===== */
+function render(){
+  saveUi();
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
+  if(ui.tab==='list'&&ui.charId&&getChar(ui.charId)) return renderChar(getChar(ui.charId));
+  ui.charId=null;
+  if(ui.tab==='compare') return renderCompare();
+  if(ui.tab==='more') return renderMore();
+  renderList();
+}
+function renderList(){
+  $('#top').innerHTML='<h1><span>Forever</span> Roster</h1><button class="btn gold sm" data-act="add">+ Add</button>';
+  const chars=sortedChars();
+  if(!chars.length){
+    $('#main').innerHTML='<div class="empty"><h2>No characters yet</h2><p>Add your first character by pasting its Armory link, or enter one by hand.</p><button class="btn gold" data-act="add">Add a character</button></div>';
+    return;
+  }
+    $('#main').innerHTML=(memOnly?'<div class="note">This browser is blocking storage, so changes will be lost when you close the page. Use Backup to export.</div>':'')+
+    chars.map(c=>'<div class="card tap" data-act="open" data-id="'+c.id+'"><div class="row">'+avatarHtml(c)+
+      '<div class="grow"><div class="name" style="color:'+classColor(c.cls)+'">'+esc(c.name)+'</div><div class="muted small">'+esc(subline(c))+
+      (c.ilvl!=null?' · ilvl '+c.ilvl:'')+'</div></div></div>'+
+      ((c.profs||[]).length?'<div class="chips">'+c.profs.map(p=>'<span class="chip">'+esc(p.name)+' <b>'+p.skill+'</b></span>').join('')+'</div>':'')+
+      '</div>').join('')+
+    '<button class="btn ghost" style="width:100%" data-act="syncall">Sync all</button>';
+}
+function renderChar(c){
+  $('#top').innerHTML='<button class="btn ghost sm" data-act="back" aria-label="Back">‹ Back</button><h1 style="color:'+classColor(c.cls)+'">'+esc(c.name)+'</h1><button class="btn sm" data-act="editchar">Edit</button>';
+  const prim=(c.profs||[]).map((p,i)=>[p,i]);
+  const profRow=([p,i])=>'<div class="item" data-act="editprof" data-i="'+i+'"><div class="grow"><div class="row"><span class="grow">'+esc(p.name)+
+    (p.primary?'':' <span class="muted small">secondary</span>')+'</span><span class="num"><b>'+p.skill+'</b><span class="muted"> / '+(p.max||SKILL_CAP)+'</span></span></div>'+barHtml(p)+'</div></div>';
+  const slots=allSlots([c]);
+  const gearRow=([k,label])=>{ const g=(c.gear||{})[k]; const u=g&&safeImg(g.icon);
+    return '<div class="item" data-act="editgear" data-slot="'+esc(k)+'">'+
+      (u?'<img class="icon" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="icon"></div>')+
+      '<div class="grow"><div class="slot">'+esc(label)+'</div>'+
+      (g?'<div class="q-'+esc(g.q)+'">'+esc(g.name)+'</div>'+(g.ench?'<div class="small" style="color:var(--ok)">'+esc(g.ench)+'</div>':'')
+        :'<div class="muted">Empty</div>')+'</div>'+
+      (g&&g.ilvl!=null?'<span class="num muted small">ilvl '+g.ilvl+'</span>':'')+'</div>'; };
+  $('#main').innerHTML=
+    '<div class="card"><div class="row">'+avatarHtml(c)+'<div class="grow"><div>'+esc(subline(c)||'No details yet')+'</div><div class="muted small">'+
+      esc([c.faction,c.ruleset,c.ilvl!=null?'ilvl '+c.ilvl:''].filter(Boolean).join(' · '))+'</div></div></div>'+
+      (c.url?'<div class="row" style="margin-top:12px"><button class="btn gold grow" data-act="sync">Sync from Armory</button><a class="btn" href="'+esc(c.url)+'" target="_blank" rel="noopener">Open</a></div><div class="muted small" style="margin-top:6px">Last synced '+ago(c.syncedAt)+'</div>'
+            :'<div class="muted small" style="margin-top:10px">No Armory link. Add one under Edit to enable syncing.</div>')+
+    '</div>'+
+    '<div class="section"><h2>Professions</h2><button class="btn sm" data-act="addprof">+ Add</button></div>'+
+    (prim.length?'<div class="list">'+prim.map(profRow).join('')+'</div>':'<div class="muted small">None recorded.</div>')+
+    '<div class="section"><h2>Equipment</h2></div><div class="list">'+slots.map(gearRow).join('')+'</div>'+
+    '<div class="section"><h2>Notes</h2></div><textarea id="notes" placeholder="Bank alts, recipes to hunt, cooldowns…">'+esc(c.notes||'')+'</textarea>';
+  $('#notes').addEventListener('change',e=>{ c.notes=e.target.value; save(); });
+}
+function renderCompare(){
+  $('#top').innerHTML='<h1>Compare</h1>';
+  const chars=sortedChars();
+  if(!chars.length){ $('#main').innerHTML='<div class="empty"><h2>Nothing to compare</h2><p>Add a character first.</p></div>'; return; }
+  const seg='<div class="seg">'+[['prof','Profession'],['all','Overview'],['gear','Gear slot']].map(m=>'<button data-act="cmode" data-m="'+m[0]+'" class="'+(ui.cmode===m[0]?'on':'')+'">'+m[1]+'</button>').join('')+'</div>';
+  let body='';
+  const names=allProfNames(chars);
+  if(ui.cmode==='prof'){
+    const opt=n=>'<option'+(n===ui.cprof?' selected':'')+'>'+esc(n)+'</option>';
+    const sel='<select id="cprof" aria-label="Profession"><optgroup label="Primary">'+names.primary.map(opt).join('')+'</optgroup><optgroup label="Secondary">'+names.secondary.map(opt).join('')+'</optgroup>'+
+      (names.extra.length?'<optgroup label="Other">'+names.extra.map(opt).join('')+'</optgroup>':'')+'</select>';
+    const have=chars.map(c=>[c,profOf(c,ui.cprof)]).filter(x=>x[1]).sort((a,b)=>b[1].skill-a[1].skill);
+    const lack=chars.filter(c=>!profOf(c,ui.cprof));
+    body=sel+'<div style="height:12px"></div>'+
+      (have.length?'<div class="list">'+have.map(([c,p])=>'<div class="item" data-act="open" data-id="'+c.id+'"><div class="grow"><div class="row"><span class="grow"><span style="color:'+classColor(c.cls)+';font-weight:600">'+esc(c.name)+'</span> <span class="muted small">'+(c.level||'')+' '+esc(c.cls||'')+'</span></span><span class="num"><b>'+p.skill+'</b><span class="muted"> / '+(p.max||SKILL_CAP)+'</span></span></div>'+barHtml(p)+'</div></div>').join('')+'</div>'
+        :'<div class="empty">Nobody has '+esc(ui.cprof)+' yet.</div>')+
+      (lack.length&&have.length?'<p class="muted small">Not learned: '+lack.map(c=>esc(c.name)).join(', ')+'</p>':'')+
+      (have.length?'<p class="muted small">Bars run to '+SKILL_CAP+'. The tick marks each character\'s current training cap.</p>':'');
+  }else if(ui.cmode==='all'){
+    const cols=names.primary.concat(names.secondary,names.extra).filter(n=>chars.some(c=>profOf(c,n)));
+    if(!cols.length) body='<div class="empty">No professions recorded yet.</div>';
+    else{
+      const best={}; cols.forEach(n=>best[n]=Math.max.apply(null,chars.map(c=>(profOf(c,n)||{skill:0}).skill)));
+      body='<div class="tablewrap"><table><thead><tr><th>Character</th>'+cols.map(n=>'<th>'+esc(n)+'</th>').join('')+'</tr></thead><tbody>'+
+        chars.map(c=>'<tr><td><span style="color:'+classColor(c.cls)+';font-weight:600">'+esc(c.name)+'</span></td>'+cols.map(n=>{const p=profOf(c,n);
+          return '<td class="num'+(p&&p.skill===best[n]&&p.skill>0?' best':'')+'">'+(p?p.skill:'<span class="muted">–</span>')+'</td>';}).join('')+'</tr>').join('')+
+        '</tbody></table></div><p class="muted small">Gold marks the highest skill in each column. Scroll sideways for more.</p>';
+    }
+  }else{
+    const slots=allSlots(chars);
+    const sel='<select id="cslot" aria-label="Gear slot">'+slots.map(s=>'<option value="'+esc(s[0])+'"'+(s[0]===ui.cslot?' selected':'')+'>'+esc(s[1])+'</option>').join('')+'</select>';
+    body=sel+'<div style="height:12px"></div><div class="list">'+chars.map(c=>{const g=(c.gear||{})[ui.cslot]; const u=g&&safeImg(g.icon);
+      return '<div class="item" data-act="open" data-id="'+c.id+'">'+(u?'<img class="icon" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="icon"></div>')+
+        '<div class="grow"><div class="slot" style="color:'+classColor(c.cls)+'">'+esc(c.name)+'</div>'+(g?'<div class="q-'+esc(g.q)+'">'+esc(g.name)+'</div>':'<div class="muted">Empty</div>')+'</div>'+
+        (g&&g.ilvl!=null?'<span class="num muted small">ilvl '+g.ilvl+'</span>':'')+'</div>';}).join('')+'</div>';
+  }
+  $('#main').innerHTML=seg+body;
+  const cp=$('#cprof'); if(cp) cp.addEventListener('change',e=>{ui.cprof=e.target.value;render();});
+  const cs=$('#cslot'); if(cs) cs.addEventListener('change',e=>{ui.cslot=e.target.value;render();});
+}
+function renderMore(){
+  $('#top').innerHTML='<h1>Backup &amp; settings</h1>';
+  $('#main').innerHTML=
+    '<div class="card"><h3>Your data</h3><p class="muted small">Everything is stored in this browser only. Export a backup before clearing browser data, or to move your roster to another device.</p>'+
+      '<div class="row wrap"><button class="btn grow" data-act="export">Export backup</button><button class="btn grow" data-act="copy">Copy to clipboard</button><button class="btn grow" data-act="import">Import backup</button></div></div>'+
+    '<div class="card"><h3>Armory syncing</h3><p class="muted small">Blizzard\'s site does not let other websites read it directly. Sync first looks for data saved in this site\'s own <code>data/</code> folder (kept fresh by the repo\'s sync job from <code>characters.txt</code>), then tries two free public relays, which are often unavailable. If all of that fails, each character offers a copy-and-paste import.</p>'+
+      '<label for="region">Region for characters added by name</label><select id="region"><option value="us">Americas (US)</option><option value="eu">Europe (EU)</option></select>'+
+      '<details><summary>Use my own relay</summary><label for="proxy">Relay address (the Armory link is added to the end)</label><input type="url" id="proxy" placeholder="https://my-worker.example.workers.dev/?url=" value="'+esc(db.settings.proxy)+'"></details></div>'+
+    '<div class="card"><h3>Danger zone</h3><button class="btn danger" data-act="wipe">Delete all characters</button></div>'+
+    '<p class="muted small" style="text-align:center">Fan-made tracker. Not affiliated with Blizzard Entertainment.</p>';
+  $('#region').value=db.settings.region;
+  $('#region').addEventListener('change',e=>{db.settings.region=e.target.value;save();});
+  $('#proxy').addEventListener('change',e=>{db.settings.proxy=e.target.value.trim();save();toast('Relay saved');});
+}
+
+/* ===== DIALOGS ===== */
+const dlg=$('#dlg');
+function openDlg(html,onSubmit){
+  dlg.innerHTML='<form method="dialog">'+html+'</form>';
+  dlg.querySelector('form').addEventListener('submit',e=>{ e.preventDefault(); onSubmit&&onSubmit(new FormData(e.target),e.submitter&&e.submitter.value); });
+  dlg.showModal();
+}
+function closeDlg(){ if(dlg.open) dlg.close(); }
+dlg.addEventListener('click',e=>{ if(e.target===dlg) closeDlg(); });
+
+function pasteHelp(url){
+  return '<div class="note"><b>Copy-and-paste import</b><br>1. <a href="'+esc(url)+'/model.json" target="_blank" rel="noopener">Open this character\'s data page</a><br>2. Select all the text and copy it<br>3. Come back and paste it below</div>'+
+    '<label for="paste">Pasted data</label><textarea id="paste" name="paste" placeholder="{&quot;character&quot;: …"></textarea>';
+}
+function dlgAdd(){
+  openDlg('<h2>Add a character</h2><label for="url">Armory link, or first and last name</label><input type="text" id="url" name="url" placeholder="https://worldofwarcraft.blizzard.com/…  or  Alessa Moriarty" autocomplete="off" autocapitalize="off">'+
+    '<div id="addmsg" class="small muted" style="margin-top:8px">Imports level, professions and equipment.</div><div id="pastebox"></div>'+
+    '<div class="actions"><button class="btn" type="button" data-act="close">Cancel</button><button class="btn" value="manual">Enter by hand</button><button class="btn gold" value="import">Import</button></div>',
+    async (fd,which)=>{
+      if(which==='manual'){ closeDlg(); return dlgEditChar(null); }
+      const msg=$('#addmsg'); let url;
+      try{ url=normalizeArmoryUrl(fd.get('url'),db.settings.region); if(!url) throw new Error('Enter a link or a name first.'); }
+      catch(e){ msg.textContent=e.message; msg.style.color='var(--danger)'; return; }
+      let ch=db.chars.find(c=>c.url===url); const isNew=!ch;
+      if(isNew) ch={id:uid(),name:'',url:url,profs:[],gear:{},notes:''};
+      const pasted=(fd.get('paste')||'').trim();
+      try{
+        if(pasted){ applyImport(ch,readChar(pasted)); }
+        else{ msg.style.color=''; msg.textContent='Fetching…'; dlg.querySelectorAll('button').forEach(b=>b.disabled=true);
+          try{ applyImport(ch,await fetchArmory(url)); } finally{ dlg.querySelectorAll('button').forEach(b=>b.disabled=false); } }
+      }catch(e){
+        msg.style.color='var(--danger)'; msg.textContent=e.message+(e.detail?' ('+e.detail+')':'');
+        if(!$('#paste')) $('#pastebox').innerHTML=pasteHelp(url);
+        return;
+      }
+      if(isNew) db.chars.push(ch);
+      save(); closeDlg(); ui.tab='list'; ui.charId=ch.id; render(); toast(isNew?'Imported '+ch.name:'Updated '+ch.name);
+    });
+}
+function dlgEditChar(c){
+  const isNew=!c; c=c||{name:'',level:'',race:'',cls:'',url:''};
+  openDlg('<h2>'+(isNew?'New character':'Edit character')+'</h2>'+
+    '<label for="f-name">Name</label><input type="text" id="f-name" name="name" required value="'+esc(c.name)+'">'+
+    '<div class="row"><div class="grow"><label for="f-level">Level</label><input type="number" id="f-level" name="level" min="1" max="60" inputmode="numeric" value="'+esc(c.level||'')+'"></div>'+
+    '<div class="grow"><label for="f-cls">Class</label><select id="f-cls" name="cls"><option value="">—</option>'+Object.keys(CLASSES).map(k=>'<option'+(k===c.cls?' selected':'')+'>'+k+'</option>').join('')+'</select></div></div>'+
+    '<label for="f-race">Race</label><input type="text" id="f-race" name="race" list="races" value="'+esc(c.race||'')+'"><datalist id="races">'+['Human','Dwarf','Night Elf','Gnome','Orc','Undead','Tauren','Troll','Skyborne'].map(r=>'<option>'+r+'</option>').join('')+'</datalist>'+
+    '<label for="f-url">Armory link (optional)</label><input type="text" id="f-url" name="url" autocapitalize="off" value="'+esc(c.url||'')+'">'+
+    '<div id="editmsg" class="small" style="color:var(--danger);margin-top:6px"></div>'+
+    '<div class="actions">'+(isNew?'':'<button class="btn danger" value="delete">Delete</button>')+'<button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Save</button></div>',
+    (fd,which)=>{
+      if(which==='delete'){ if(!confirm('Delete '+c.name+'? This cannot be undone.')) return; db.chars=db.chars.filter(x=>x.id!==c.id); ui.charId=null; save(); closeDlg(); render(); return; }
+      let url=''; try{ url=normalizeArmoryUrl(fd.get('url'),db.settings.region); }catch(e){ $('#editmsg').textContent=e.message; return; }
+      const target=isNew?{id:uid(),profs:[],gear:{},notes:''}:c;
+      target.name=fd.get('name').trim(); target.level=Number(fd.get('level'))||null; target.cls=fd.get('cls'); target.race=fd.get('race').trim(); target.url=url;
+      if(isNew) db.chars.push(target);
+      save(); closeDlg(); ui.tab='list'; ui.charId=target.id; render();
+    });
+}
+function dlgProf(c,i){
+  const isNew=i==null; const p=isNew?{name:'',skill:1,max:75,primary:true}:c.profs[i];
+  const names=allProfNames(db.chars); const known=names.primary.concat(names.secondary,names.extra);
+  const custom=!isNew&&!known.includes(p.name);
+  openDlg('<h2>'+(isNew?'Add profession':esc(p.name))+'</h2>'+
+    '<label for="p-name">Profession</label><select id="p-name" name="name">'+known.map(n=>'<option'+(n===p.name?' selected':'')+'>'+esc(n)+'</option>').join('')+'<option value="__other"'+(custom?' selected':'')+'>Other…</option></select>'+
+    '<input type="text" id="p-other" name="other" placeholder="Profession name" style="margin-top:8px;'+(custom?'':'display:none')+'" value="'+(custom?esc(p.name):'')+'">'+
+    '<div class="row"><div class="grow"><label for="p-skill">Skill</label><input type="number" id="p-skill" name="skill" min="0" max="'+SKILL_CAP+'" inputmode="numeric" value="'+p.skill+'"></div>'+
+    '<div class="grow"><label for="p-max">Trained up to</label><select id="p-max" name="max">'+[75,150,225,300].map(m=>'<option value="'+m+'"'+(m===p.max?' selected':'')+'>'+m+'</option>').join('')+
+      ([75,150,225,300].includes(p.max)?'':'<option value="'+p.max+'" selected>'+p.max+'</option>')+'</select></div></div>'+
+    '<div class="actions">'+(isNew?'':'<button class="btn danger" value="delete">Remove</button>')+'<button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Save</button></div>',
+    (fd,which)=>{
+      if(which==='delete'){ c.profs.splice(i,1); }
+      else{
+        let name=fd.get('name'); if(name==='__other') name=(fd.get('other')||'').trim(); if(!name) return;
+        const max=Number(fd.get('max'))||SKILL_CAP; const skill=Math.max(0,Math.min(Number(fd.get('skill'))||0,SKILL_CAP));
+        const rec={name:name,skill:skill,max:Math.max(max,[75,150,225,300].find(m=>m>=skill)||SKILL_CAP),primary:!SECONDARY.includes(name)};
+        const dupe=c.profs.findIndex((x,j)=>j!==i&&x.name.toLowerCase()===name.toLowerCase());
+        if(dupe>=0){ c.profs[dupe]=rec; if(!isNew) c.profs.splice(i,1); }
+        else if(isNew) c.profs.push(rec); else c.profs[i]=rec;
+      }
+      save(); closeDlg(); render();
+    });
+  $('#p-name').addEventListener('change',e=>{ $('#p-other').style.display=e.target.value==='__other'?'':'none'; });
+}
+function dlgGear(c,slot){
+  const label=(allSlots([c]).find(s=>s[0]===slot)||[slot,slot])[1]; const g=(c.gear||{})[slot]||{name:'',q:'UNCOMMON',ilvl:'',ench:''};
+  const has=!!(c.gear||{})[slot];
+  openDlg('<h2>'+esc(label)+'</h2><label for="g-name">Item name</label><input type="text" id="g-name" name="name" value="'+esc(g.name)+'">'+
+    '<div class="row"><div class="grow"><label for="g-q">Quality</label><select id="g-q" name="q">'+QUALITIES.map(q=>'<option value="'+q+'"'+(q===g.q?' selected':'')+'>'+q[0]+q.slice(1).toLowerCase()+'</option>').join('')+'</select></div>'+
+    '<div class="grow"><label for="g-ilvl">Item level</label><input type="number" id="g-ilvl" name="ilvl" min="0" inputmode="numeric" value="'+esc(g.ilvl==null?'':g.ilvl)+'"></div></div>'+
+    '<label for="g-ench">Enchant / note</label><input type="text" id="g-ench" name="ench" value="'+esc(g.ench||'')+'">'+
+    '<div class="actions">'+(has?'<button class="btn danger" value="delete">Clear slot</button>':'')+'<button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Save</button></div>',
+    (fd,which)=>{
+      c.gear=c.gear||{};
+      const name=fd.get('name').trim();
+      if(which==='delete'||!name) delete c.gear[slot];
+      else{ const il=fd.get('ilvl'); c.gear[slot]=Object.assign({},g,{name:name,q:fd.get('q'),ilvl:il===''?null:Number(il),ench:fd.get('ench').trim(),icon:name===g.name?g.icon:''}); }
+      save(); closeDlg(); render();
+    });
+}
+function dlgSyncFail(c,err){
+  openDlg('<h2>Sync did not work</h2><p class="small muted">'+esc(err.message)+(err.detail?'<br>'+esc(err.detail):'')+'</p>'+pasteHelp(c.url)+
+    '<div id="pmsg" class="small" style="color:var(--danger)"></div><div class="actions"><button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Import pasted data</button></div>',
+    fd=>{ try{ applyImport(c,readChar(fd.get('paste'))); save(); closeDlg(); render(); toast('Updated '+c.name); }
+          catch(e){ $('#pmsg').textContent=e.message; } });
+}
+function dlgImport(){
+  openDlg('<h2>Import backup</h2><p class="small muted">This replaces the roster on this device.</p><label for="bfile">Backup file</label><input type="file" id="bfile" accept="application/json,.json">'+
+    '<label for="btext">…or paste backup text</label><textarea id="btext" name="text"></textarea><div id="imsg" class="small" style="color:var(--danger)"></div>'+
+    '<div class="actions"><button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Import</button></div>',
+    async fd=>{ try{ const f=$('#bfile').files[0]; const txt=f?await f.text():fd.get('text'); const d=JSON.parse(txt);
+        if(!d||!Array.isArray(d.chars)) throw new Error('That is not a Forever Roster backup.');
+        d.chars=d.chars.filter(c=>c&&typeof c==='object'&&c.name).map(c=>Object.assign({profs:[],gear:{},notes:''},c,{id:c.id||uid()}));
+        db={chars:d.chars,settings:Object.assign({proxy:'',region:'us'},d.settings||{})}; save(); closeDlg(); ui.charId=null; ui.tab='list'; render(); toast('Imported '+db.chars.length+' characters'); }
+      catch(e){ $('#imsg').textContent=e.message||'Could not read that backup.'; } });
+}
+
+/* ===== ACTIONS ===== */
+const actions={
+  tab(d){ ui.tab=d.tab; ui.charId=null; render(); window.scrollTo(0,0); },
+  open(d){ ui.tab='list'; ui.charId=d.id; render(); window.scrollTo(0,0); },
+  back(){ ui.charId=null; render(); },
+  close(){ closeDlg(); },
+  add(){ dlgAdd(); },
+  editchar(){ dlgEditChar(getChar(ui.charId)); },
+  addprof(){ dlgProf(getChar(ui.charId),null); },
+  editprof(d){ dlgProf(getChar(ui.charId),Number(d.i)); },
+  editgear(d){ dlgGear(getChar(ui.charId),d.slot); },
+  cmode(d){ ui.cmode=d.m; render(); },
+  async sync(d,el){ const c=getChar(ui.charId); el.disabled=true; el.textContent='Syncing…';
+    try{ await syncChar(c); toast('Updated '+c.name); render(); }catch(e){ render(); dlgSyncFail(c,e); } },
+  async syncall(d,el){ el.disabled=true; el.textContent='Syncing…'; let ok=0,bad=[]; const list=db.chars.filter(c=>c.url); const added=await addFromRepoIndex();
+    for(let i=0;i<list.length;i++){ el.textContent='Syncing '+(i+1)+' of '+list.length+'…'; try{ await syncChar(list[i]); ok++; }catch(e){ bad.push(list[i].name); } }
+    render(); toast((added?'Added '+added+'. ':'')+(bad.length?'Updated '+ok+'. Failed: '+bad.join(', '):'Updated '+ok+' character'+(ok===1?'':'s')),bad.length?5000:2600); },
+  export(){ const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='forever-roster-'+new Date().toISOString().slice(0,10)+'.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); },
+  async copy(){ try{ await navigator.clipboard.writeText(JSON.stringify(db)); toast('Backup copied'); }catch(e){ toast('Copy was blocked. Use Export instead.'); } },
+  import(){ dlgImport(); },
+  wipe(){ if(confirm('Delete every character on this device?')){ db.chars=[]; save(); ui.tab='list'; render(); } }
+};
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]'); if(!el) return;
+  if(e.target.closest('a')) return;
+  const fn=actions[el.dataset.act]; if(fn){ if(el.tagName==='BUTTON'&&el.type!=='submit') e.preventDefault(); fn(el.dataset,el); }
+});
+load(); render();
+if(!db.chars.length) addFromRepoIndex().then(n=>{ if(n){ render(); toast('Loaded '+n+' character'+(n===1?'':'s')); } });
+</script>
+</body>
+</html>

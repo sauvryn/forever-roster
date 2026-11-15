@@ -1,0 +1,144 @@
+{
+ "name": "Rahab Erythra",
+ "level": 13,
+ "race": "Troll",
+ "cls": "Mage",
+ "faction": "Horde",
+ "ruleset": "Roleplay",
+ "ilvl": 7,
+ "avatar": "https://render.worldofwarcraft.com/forever-us/character/26/25927450-avatar.jpg",
+ "armoryAt": 1794757331000,
+ "profs": [
+  {
+   "name": "Alchemy",
+   "skill": 106,
+   "max": 150,
+   "primary": true
+  },
+  {
+   "name": "Herbalism",
+   "skill": 92,
+   "max": 150,
+   "primary": true
+  },
+  {
+   "name": "Cooking",
+   "skill": 79,
+   "max": 150,
+   "primary": false
+  },
+  {
+   "name": "Fishing",
+   "skill": 50,
+   "max": 150,
+   "primary": false
+  },
+  {
+   "name": "First Aid",
+   "skill": 40,
+   "max": 75,
+   "primary": false
+  }
+ ],
+ "gear": {
+  "BACK": {
+   "name": "Woolen Cape",
+   "q": "UNCOMMON",
+   "ilvl": 16,
+   "type": "Cloth",
+   "ench": "Armor +10",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/133762.jpg",
+   "slotName": "Back"
+  },
+  "CHEST": {
+   "name": "Green Woolen Vest",
+   "q": "UNCOMMON",
+   "ilvl": 17,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132680.jpg",
+   "slotName": "Chest"
+  },
+  "FEET": {
+   "name": "Soft-soled Linen Boots",
+   "q": "UNCOMMON",
+   "ilvl": 16,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132543.jpg",
+   "slotName": "Feet"
+  },
+  "HANDS": {
+   "name": "Heavy Woolen Gloves",
+   "q": "UNCOMMON",
+   "ilvl": 17,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132939.jpg",
+   "slotName": "Hands"
+  },
+  "FINGER_1": {
+   "name": "Depleted Ritual Band",
+   "q": "COMMON",
+   "ilvl": 9,
+   "type": "Miscellaneous",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/133348.jpg",
+   "slotName": "Ring 1"
+  },
+  "LEGS": {
+   "name": "Handstitched Linen Britches",
+   "q": "UNCOMMON",
+   "ilvl": 14,
+   "type": "Cloth",
+   "ench": "Stamina +2 and Armor +16",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/134587.jpg",
+   "slotName": "Legs"
+  },
+  "RANGED": {
+   "name": "Greater Magic Wand",
+   "q": "UNCOMMON",
+   "ilvl": 23,
+   "type": "Wand",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/135144.jpg",
+   "slotName": "Ranged"
+  },
+  "SHIRT": {
+   "name": "Apprentice's Shirt",
+   "q": "COMMON",
+   "ilvl": 1,
+   "type": "Miscellaneous",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/135005.jpg",
+   "slotName": "Shirt"
+  },
+  "WAIST": {
+   "name": "Linen Belt",
+   "q": "COMMON",
+   "ilvl": 9,
+   "type": "Cloth",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132494.jpg",
+   "slotName": "Waist"
+  },
+  "MAIN_HAND": {
+   "name": "Ley Staff",
+   "q": "UNCOMMON",
+   "ilvl": 10,
+   "type": "Staff",
+   "ench": "",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/135158.jpg",
+   "slotName": "Main Hand"
+  },
+  "WRIST": {
+   "name": "Green Linen Bracers",
+   "q": "UNCOMMON",
+   "ilvl": 12,
+   "type": "Cloth",
+   "ench": "Defense +3",
+   "icon": "https://render.worldofwarcraft.com/forever-us/icons/56/132611.jpg",
+   "slotName": "Wrist"
+  }
+ }
+}
