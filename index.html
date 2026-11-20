@@ -85,6 +85,14 @@ textarea{min-height:90px;resize:vertical}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:16px;
   width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+/* item tooltip, after the in-game look */
+.tt{font-size:.92rem;line-height:1.35;margin-top:2px}
+.tt-name{font-family:var(--serif);font-size:1.1rem;font-weight:600;margin-bottom:2px}
+.tt-pair{display:flex;justify-content:space-between;gap:12px}
+.tt-green{color:#1eff00}.tt-gold{color:#ffd100}.tt-dim{color:#808080}.tt-xmog{color:#ff80ff}
+.tt-gap{margin-top:8px}
+.coin{display:inline-block;width:.7em;height:.7em;border-radius:50%;margin:0 1px 0 2px;vertical-align:-1px}
+.coin.g{background:#e8c04a}.coin.s{background:#c8ccd4}.coin.c{background:#c27a3e}
 dialog::backdrop{background:rgba(0,0,0,.65)}
 dialog h2{font-size:1.2rem;margin-bottom:6px}
 .actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
@@ -213,6 +221,34 @@ function convProf(p,primary){
   return {name:String(p.name||t.name||'Unknown'),skill:Number(t.skillPoints)||0,max:Number(t.maxSkillPoints)||0,primary:!!primary};
 }
 
+/* The parts of a Blizzard item that make up its in-game tooltip. Every field is optional. */
+function itemTip(v){
+  const ds=o=>o&&typeof o.display_string==='string'?o.display_string:'';
+  const t={};
+  if(v.binding&&v.binding.name) t.bind=String(v.binding.name);
+  if(v.inventory_type&&v.inventory_type.name) t.inv=String(v.inventory_type.name);
+  if(v.item_subclass&&v.item_subclass.name&&!v.is_subclass_hidden) t.sub=String(v.item_subclass.name);
+  if(v.weapon){ t.dmg=ds(v.weapon.damage); t.speed=ds(v.weapon.attack_speed); t.dps=ds(v.weapon.dps); }
+  if(v.armor&&v.armor.value!=null) t.armor=String(v.armor.value)+' Armor';
+  t.stats=(Array.isArray(v.stats)?v.stats:[]).map(x=>{
+    const c=x&&x.display&&x.display.color, green=!!(x&&x.is_equip_bonus)||!!(c&&c.g>200&&c.r<100&&c.b<100);
+    return {t:ds(x&&x.display)||((x&&x.value!=null&&x.type&&x.type.name)?'+'+x.value+' '+x.type.name:''),g:green};
+  }).filter(x=>x.t);
+  t.ench=(Array.isArray(v.enchantments)?v.enchantments:[]).map(ds).filter(Boolean);
+  t.equip=(Array.isArray(v.spells)?v.spells:[]).map(x=>x&&(x.description||ds(x))).filter(Boolean).map(String);
+  if(v.set&&typeof v.set==='object'){
+    t.set={name:ds(v.set)||(v.set.item_set&&v.set.item_set.name)||'',
+      lines:(Array.isArray(v.set.effects)?v.set.effects:[]).map(e=>({t:ds(e),on:!!(e&&e.is_active)})).filter(e=>e.t)};
+  }
+  t.dur=ds(v.durability);
+  t.reqs=v.requirements&&typeof v.requirements==='object'?Object.keys(v.requirements).map(k=>ds(v.requirements[k])).filter(Boolean):[];
+  t.lvl=ds(v.level);
+  if(v.description) t.desc=String(v.description);
+  const sp=v.sell_price&&v.sell_price.display_strings;
+  if(sp) t.sell={g:Number(sp.gold)||0,s:Number(sp.silver)||0,c:Number(sp.copper)||0};
+  if(v.transmog&&v.transmog.item&&v.transmog.item.name&&v.transmog.item.name!==v.name) t.xmog=String(v.transmog.item.name);
+  return t;
+}
 /* Blizzard's character object -> the small shape this app stores. */
 function toChar(c){
   const out={
@@ -240,7 +276,8 @@ function toChar(c){
         ilvl:v.level&&v.level.value!=null?Number(v.level.value):null,
         type:v.item_subclass&&v.item_subclass.name||'',
         ench:(v.enchantments||[]).map(e=>e&&e.display_string).filter(Boolean).join('; ').replace(/^Enchanted:\s*/,''),
-        icon:icon, slotName:v.slot&&v.slot.name||''
+        icon:icon, slotName:v.slot&&v.slot.name||'',
+        tip:itemTip(v)
       };
     });
   });
@@ -261,7 +298,7 @@ function cleanChar(j){
   const out={name:str(j.name),level:num(j.level),race:str(j.race),cls:str(j.cls),faction:str(j.faction),ruleset:str(j.ruleset),
     ilvl:num(j.ilvl),avatar:str(j.avatar),armoryAt:num(j.armoryAt),profs:[],gear:{}};
   (j.profs||[]).forEach(p=>{ if(p&&p.name) out.profs.push({name:str(p.name),skill:num(p.skill)||0,max:num(p.max)||0,primary:!!p.primary}); });
-  Object.keys(j.gear||{}).forEach(k=>{ const g=j.gear[k]; if(g&&g.name) out.gear[k]={name:str(g.name),q:str(g.q||'COMMON'),ilvl:num(g.ilvl),type:str(g.type),ench:str(g.ench),icon:str(g.icon),slotName:str(g.slotName)}; });
+  Object.keys(j.gear||{}).forEach(k=>{ const g=j.gear[k]; if(g&&g.name) out.gear[k]={name:str(g.name),q:str(g.q||'COMMON'),ilvl:num(g.ilvl),type:str(g.type),ench:str(g.ench),icon:str(g.icon),slotName:str(g.slotName),tip:g.tip&&typeof g.tip==='object'?g.tip:undefined,extra:str(g.extra)}; });
   return out;
 }
 /* Where the repo's sync job stores a character: data/<region>-<slug>.json */
@@ -425,7 +462,7 @@ function renderChar(c){
     (p.primary?'':' <span class="muted small">secondary</span>')+'</span><span class="num"><b>'+p.skill+'</b><span class="muted"> / '+(p.max||SKILL_CAP)+'</span></span></div>'+barHtml(p)+'</div></div>';
   const slots=allSlots([c]);
   const gearRow=([k,label])=>{ const g=(c.gear||{})[k]; const u=g&&safeImg(g.icon);
-    return '<div class="item" data-act="editgear" data-slot="'+esc(k)+'">'+
+    return '<div class="item" data-act="item" data-slot="'+esc(k)+'">'+
       (u?'<img class="icon" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="icon"></div>')+
       '<div class="grow"><div class="slot">'+esc(label)+'</div>'+
       (g?'<div class="q-'+esc(g.q)+'">'+esc(g.name)+'</div>'+(g.ench?'<div class="small" style="color:var(--ok)">'+esc(g.ench)+'</div>':'')
@@ -475,7 +512,7 @@ function renderCompare(){
     const slots=allSlots(chars);
     const sel='<select id="cslot" aria-label="Gear slot">'+slots.map(s=>'<option value="'+esc(s[0])+'"'+(s[0]===ui.cslot?' selected':'')+'>'+esc(s[1])+'</option>').join('')+'</select>';
     body=sel+'<div style="height:12px"></div><div class="list">'+chars.map(c=>{const g=(c.gear||{})[ui.cslot]; const u=g&&safeImg(g.icon);
-      return '<div class="item" data-act="open" data-id="'+c.id+'">'+(u?'<img class="icon" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="icon"></div>')+
+      return '<div class="item" data-act="citem" data-id="'+c.id+'">'+(u?'<img class="icon" src="'+esc(u)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">':'<div class="icon"></div>')+
         '<div class="grow"><div class="slot" style="color:'+classColor(c.cls)+'">'+esc(c.name)+'</div>'+(g?'<div class="q-'+esc(g.q)+'">'+esc(g.name)+'</div>':'<div class="muted">Empty</div>')+'</div>'+
         (g&&g.ilvl!=null?'<span class="num muted small">ilvl '+g.ilvl+'</span>':'')+'</div>';}).join('')+'</div>';
   }
@@ -585,6 +622,44 @@ function dlgProf(c,i){
     });
   $('#p-name').addEventListener('change',e=>{ $('#p-other').style.display=e.target.value==='__other'?'':'none'; });
 }
+function tipHtml(g){
+  const t=g.tip||{}, L=[];
+  const line=(txt,cls)=>{ if(txt) L.push('<div class="'+(cls||'')+'">'+esc(txt)+'</div>'); };
+  const pair=(a,b,cls)=>{ if(a||b) L.push('<div class="tt-pair '+(cls||'')+'"><span>'+esc(a||'')+'</span><span>'+esc(b||'')+'</span></div>'); };
+  L.push('<div class="tt-name q-'+esc(g.q||'COMMON')+'">'+esc(g.name)+'</div>');
+  line(t.xmog?'Transmogrified to: '+t.xmog:'','tt-xmog');
+  line(t.bind);
+  pair(t.inv,t.sub);
+  pair(t.dmg,t.speed);
+  line(t.dps);
+  line(t.armor);
+  (t.stats||[]).filter(x=>!x.g).forEach(x=>line(x.t));
+  (t.ench||[]).forEach(x=>line(x,'tt-green'));
+  if(!t.ench&&g.ench) line('Enchanted: '+g.ench,'tt-green');
+  line(t.dur);
+  (t.reqs||[]).forEach(x=>line(x));
+  line(t.lvl||(g.ilvl!=null?'Item Level '+g.ilvl:''),'tt-gold');
+  (t.stats||[]).filter(x=>x.g).forEach(x=>line(x.t,'tt-green'));
+  (t.equip||[]).forEach(x=>line(/^(equip|use|chance on hit):/i.test(x)?x:'Equip: '+x,'tt-green'));
+  if(t.set&&(t.set.name||t.set.lines.length)){ line(t.set.name,'tt-gold tt-gap'); t.set.lines.forEach(x=>line(x.t,x.on?'tt-green':'tt-dim')); }
+  line(t.desc?'"'+t.desc+'"':'','tt-gold');
+  String(g.extra||'').split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>line(x,'tt-green'));
+  if(t.sell&&(t.sell.g||t.sell.s||t.sell.c)) L.push('<div class="tt-gap">Sell Price: '+(t.sell.g?t.sell.g+'<i class="coin g"></i> ':'')+(t.sell.s?t.sell.s+'<i class="coin s"></i> ':'')+(t.sell.c?t.sell.c+'<i class="coin c"></i>':'')+'</div>');
+  return '<div class="tt">'+L.join('')+'</div>';
+}
+function dlgItem(c,slot,fromCompare){
+  const g=(c.gear||{})[slot];
+  if(!g) return fromCompare?showChar(c.id):dlgGear(c,slot);
+  const u=safeImg(g.icon);
+  const label=(allSlots([c]).find(s=>s[0]===slot)||[slot,slot])[1];
+  const hasArmory=!!g.tip;
+  openDlg('<div class="row" style="align-items:flex-start;gap:12px">'+(u?'<img class="icon" style="width:44px;height:44px" src="'+esc(u)+'" alt="" onerror="this.style.display=\'none\'">':'')+
+      '<div class="grow"><div class="slot">'+esc(fromCompare?c.name+' · '+label:label)+'</div>'+tipHtml(g)+'</div></div>'+
+    (hasArmory||g.extra?'':'<p class="muted small" style="margin-top:10px">'+(c.url?'Full stats appear after you sync this character.':'Entered by hand. Add stats under Edit, one per line.')+'</p>')+
+    '<div class="actions"><button class="btn" type="button" data-act="close">Close</button>'+
+      (fromCompare?'<button class="btn gold" value="open">Open character</button>':'<button class="btn" value="edit">Edit</button>')+'</div>',
+    (fd,which)=>{ closeDlg(); if(which==='open') showChar(c.id); else if(which==='edit') dlgGear(c,slot); });
+}
 function dlgGear(c,slot){
   const label=(allSlots([c]).find(s=>s[0]===slot)||[slot,slot])[1]; const g=(c.gear||{})[slot]||{name:'',q:'UNCOMMON',ilvl:'',ench:''};
   const has=!!(c.gear||{})[slot];
@@ -592,12 +667,14 @@ function dlgGear(c,slot){
     '<div class="row"><div class="grow"><label for="g-q">Quality</label><select id="g-q" name="q">'+QUALITIES.map(q=>'<option value="'+q+'"'+(q===g.q?' selected':'')+'>'+q[0]+q.slice(1).toLowerCase()+'</option>').join('')+'</select></div>'+
     '<div class="grow"><label for="g-ilvl">Item level</label><input type="number" id="g-ilvl" name="ilvl" min="0" inputmode="numeric" value="'+esc(g.ilvl==null?'':g.ilvl)+'"></div></div>'+
     '<label for="g-ench">Enchant / note</label><input type="text" id="g-ench" name="ench" value="'+esc(g.ench||'')+'">'+
+    '<label for="g-extra">Extra stats &amp; effects (one per line)</label><textarea id="g-extra" name="extra" placeholder="+3 Stamina&#10;Equip: Restores 2 mana per 5 sec.">'+esc(g.extra||'')+'</textarea>'+
+    (g.tip?'<p class="muted small">Stats from the Armory are kept unless you rename the item.</p>':'')+
     '<div class="actions">'+(has?'<button class="btn danger" value="delete">Clear slot</button>':'')+'<button class="btn" type="button" data-act="close">Cancel</button><button class="btn gold" value="save">Save</button></div>',
     (fd,which)=>{
       c.gear=c.gear||{};
       const name=fd.get('name').trim();
       if(which==='delete'||!name) delete c.gear[slot];
-      else{ const il=fd.get('ilvl'); c.gear[slot]=Object.assign({},g,{name:name,q:fd.get('q'),ilvl:il===''?null:Number(il),ench:fd.get('ench').trim(),icon:name===g.name?g.icon:''}); }
+      else{ const il=fd.get('ilvl'); c.gear[slot]=Object.assign({},g,{name:name,q:fd.get('q'),ilvl:il===''?null:Number(il),ench:fd.get('ench').trim(),extra:fd.get('extra').trim(),icon:name===g.name?g.icon:'',tip:name===g.name?g.tip:undefined}); }
       save(); closeDlg(); render();
     });
 }
@@ -636,7 +713,8 @@ const actions={
   editchar(){ dlgEditChar(getChar(ui.charId)); },
   addprof(){ dlgProf(getChar(ui.charId),null); },
   editprof(d){ dlgProf(getChar(ui.charId),Number(d.i)); },
-  editgear(d){ dlgGear(getChar(ui.charId),d.slot); },
+  item(d){ dlgItem(getChar(ui.charId),d.slot,false); },
+  citem(d){ dlgItem(getChar(d.id),ui.cslot,true); },
   cmode(d){ ui.cmode=d.m; render(); },
   async sync(d,el){ const c=getChar(ui.charId); el.disabled=true; el.textContent='Syncing…';
     try{ await syncChar(c); toast('Updated '+c.name); render(); }catch(e){ render(); dlgSyncFail(c,e); } },
